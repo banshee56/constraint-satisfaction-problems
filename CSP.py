@@ -1,6 +1,10 @@
 class ConstraintSatisfactionProblem:
     def __init__(self, problem):
         self.csp = problem
+        self.constraint_dict = {}
+
+        for key in problem.int_to_territory:
+            self.constraint_dict[key] = list(problem.int_to_domain.keys())
     
     # MRV and degree heuristics
     def select_unassigned_variable(self, assignment):
