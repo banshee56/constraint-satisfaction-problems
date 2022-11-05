@@ -2,7 +2,7 @@ from CSP import ConstraintSatisfactionProblem
 
 
 class MapColoringCSP:
-    def __init__(self, adjacencyList, domainList, MRV=False, DH=True, LCV=False):
+    def __init__(self, adjacencyList, domainList, MRV=False, DH=False, LCV=False):
         self.adjacencyList = adjacencyList
 
         variables = []
