@@ -1,6 +1,6 @@
 from MapColoringCSP import MapColoringCSP
 
-file = open('aus_states.txt', 'r')
+file = open('us_states.txt', 'r')
 # variables = file.readline()
 domain_list = file.readline().strip().split(',')
 
@@ -17,9 +17,8 @@ for line in file:
     else:
         adjacency_list[curr] = []
 
-print(domain_list)
-# print(adjacency_list)
-
 mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
+solution = mapColoringProblem.solve_csp()
 
-print(mapColoringProblem.solve_csp())
+if solution:
+    print(solution)

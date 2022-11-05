@@ -5,18 +5,14 @@ class MapColoringCSP:
     def __init__(self, adjacencyList, domainList):
         self.adjacencyList = adjacencyList
 
-        # self.variables = ['WA', 'NT', 'SA', 'Q', 'NSW', 'V', 'T']
-        # self.domain = ['r', 'g', 'b']
-        variables = []
 
+        variables = []
         for key in adjacencyList:
             variables.append(key)
 
         self.variables =  variables
         self.domain = domainList
 
-        # self.int_to_territory = {0: 'WA', 1:'NT', 2:'SA', 3:'Q', 4:'NSW', 5:'V', 6:'T'}
-        # self.int_to_domain = {0: 'r', 1:'g', 2:'b'}
         territoryDict1 = {}
         territoryDict2 = {}
         index = 0
@@ -24,6 +20,7 @@ class MapColoringCSP:
             territoryDict1[index] = variable
             territoryDict2[variable] = index
             index += 1
+
         self.int_to_territory = territoryDict1
         self.territory_to_int = territoryDict2
 
@@ -32,13 +29,9 @@ class MapColoringCSP:
         for color in domainList:
             colorDict[index] = color
             index += 1
-        self.int_to_domain = colorDict
 
-        state = [None for i in range(len(self.variables))] 
-        # for i in range(len(self.variables)):
-        #     state.append(None)
-        
-        self.state = state
+        self.int_to_domain = colorDict
+        self.visited = 0
 
     def solve_csp(self):
         csp = ConstraintSatisfactionProblem(self)
@@ -47,6 +40,7 @@ class MapColoringCSP:
         solution = csp.backtracking_search()
 
         if not solution:
+            print('No solution found after visiting '+str(self.visited)+' nodes.')
             return False
 
         # map from int back to variables
@@ -57,6 +51,7 @@ class MapColoringCSP:
             readable[self.int_to_territory[variable]] = self.int_to_domain[value]
 
         # return solution
+        print('Found solutions after visiting '+str(self.visited)+' nodes.')
         return readable
 
     def order_domain_values(self, variable, assignment):

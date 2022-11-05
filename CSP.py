@@ -8,17 +8,12 @@ class ConstraintSatisfactionProblem:
     def assignment_is_complete(self, assignment, csp):
         return len(assignment) == len(csp.int_to_territory)
 
-        # for value in assignment:
-        #     if value is None:
-        #         return False
-        
-        # return True
-
     def backtracking_search(self):
         # init_assingment = [None for i in range(len(self.csp.int_to_territory))]
         return self.recursive_backtracking([], self.csp)
     
     def recursive_backtracking(self, assignment, csp):
+        csp.visited += 1
         if self.assignment_is_complete(assignment, csp):
             return assignment
 
