@@ -1,0 +1,8 @@
+r,g,b
+WA,NT,SA
+NT,WA,SA,Q
+Q,NT,SA,NSW
+SA,WA,NT,Q,NSW,V
+NSW,SA,Q,V
+V,SA,NSW
+T
