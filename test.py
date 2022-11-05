@@ -19,7 +19,7 @@ def get_params(file):
     return (adjacency_list, domain_list)
 
 # edit filename for input
-file = open('aus_states.txt', 'r')
+file = open('us_states.txt', 'r')
 (adjacency_list, domain_list) = get_params(file)
 
 
