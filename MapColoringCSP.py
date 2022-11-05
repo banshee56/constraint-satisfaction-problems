@@ -2,7 +2,7 @@ from CSP import ConstraintSatisfactionProblem
 
 
 class MapColoringCSP:
-    def __init__(self, adjacencyList, domainList):
+    def __init__(self, adjacencyList, domainList, MRV=False, DH=True, LCV=False):
         self.adjacencyList = adjacencyList
 
         variables = []
@@ -30,6 +30,11 @@ class MapColoringCSP:
             index += 1
 
         self.int_to_domain = colorDict
+
+        # heuristic selection
+        self.mrv = MRV
+        self.dh = DH
+        self.lcv = LCV
         self.visited = 0
 
     def solve_csp(self):
