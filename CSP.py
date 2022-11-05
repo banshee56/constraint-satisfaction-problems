@@ -2,8 +2,18 @@ class ConstraintSatisfactionProblem:
     def __init__(self, problem):
         self.csp = problem
     
+    # MRV and degree heuristics
     def select_unassigned_variable(self, assignment):
         return len(assignment)
+
+    # LCV
+    def order_domain_values(self, variable, assignment):
+        domain = []
+        
+        for num in self.csp.int_to_domain:
+            domain.append(num)
+
+        return domain
 
     def assignment_is_complete(self, assignment, csp):
         return len(assignment) == len(csp.int_to_territory)
@@ -19,7 +29,7 @@ class ConstraintSatisfactionProblem:
 
         variable = self.select_unassigned_variable(assignment)
 
-        domains = csp.order_domain_values(variable, assignment)
+        domains = self.order_domain_values(variable, assignment)
         for value in domains:
             # check if value works with variable in current assignment
             if csp.is_consistent(variable, value, assignment):
