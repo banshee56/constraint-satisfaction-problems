@@ -1,9 +1,11 @@
 from MapColoringCSP import MapColoringCSP
+from time import time
 
+# reads from a file containing the information
 def get_params(file):
     domain_list = file.readline().strip().split(',')
 
-    adjacency_list = {}
+    adjacency_list = {} # dictionary
     for line in file:
         states = line.strip().split(',')
         curr = states[0]
@@ -24,7 +26,10 @@ file = open('us_states.txt', 'r')
 
 
 mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
+before = time()
 solution = mapColoringProblem.solve_csp()
+after = time()
 
 if solution:
     print(solution)
+    print("It took "+str(after-before)+" seconds to solve.")
