@@ -8,13 +8,21 @@ class ConstraintSatisfactionProblem:
         self.dh = DH
         self.lcv = LCV
 
+        # if dh turned on, but mrv is not
+        if self.dh and not self.mrv:
+            print("NOTE: Automatically turning on MRV to use with DH.")
+            self.mrv = True
+
         for key in problem.int_to_territory:
             # each territory starts off with all values in the domain being possibilities
             self.possibility_dict[key] = list(problem.int_to_domain.keys())
+
+        self.test = 0
     
     # MRV
     def minimum_remaining_values(self, assignment):
         min_moves = float('inf')
+        mrv = []
 
         for key in self.possibility_dict:
             # if this key already has an assignment
@@ -41,53 +49,35 @@ class ConstraintSatisfactionProblem:
         dh = 0
         max_constraints = -float('inf')
 
-        # break ties if more than one mrv
-        if len(mrv) > 1:
-            neighbors = []
-            for key in mrv:
-                constraints = 0
-                neighbors = self.csp.adjacencyList[self.csp.int_to_territory[key]]
+        # break ties for mrv
+        for key in mrv:
+            constraints = 0
+            neighbors = self.csp.adjacencyList[self.csp.int_to_territory[key]]
+
+            # number of constraints = number of unassigned neighbors
+            for n in neighbors:
+                neighbor = self.csp.territory_to_int[n]
 
                 # number of constraints = number of unassigned neighbors
-                for n in neighbors:
-                    neighbor = self.csp.territory_to_int[n]
-                    if assignment[neighbor] is None:
-                        constraints += 1
-                
-                if constraints > max_constraints:
-                    max_constraints = constraints
-                    dh = key
+                if assignment[neighbor] is None:
+                    constraints += 1
+            
+            if constraints > max_constraints:
+                max_constraints = constraints
+                dh = key
 
-        # run dh on all vertices
-        else:
-            for key in self.possibility_dict:
-                if assignment[key] is not None:
-                    continue
-                constraints = 0
-
-                neighbors = self.csp.adjacencyList[self.csp.int_to_territory[key]]
-                for n in neighbors:
-                    neighbor = self.csp.territory_to_int[n]
-                    if assignment[neighbor] is None:
-                        constraints += 1
-                    print("key "+str(neighbor)+" has constraints: "+str(constraints))
-                
-                if constraints > max_constraints:
-                    max_constraints = constraints
-                    dh = key
-
-        # print(self.csp.int_to_territory[dh])
-        print("dh returning: "+str(dh))
         return dh
 
     def select_unassigned_variable(self, assignment):
         mrv = []
-        if self.mrv:
+
+        # run mrv only
+        if self.mrv and not self.dh:
             mrv = self.minimum_remaining_values(assignment)
 
-        if self.dh:
-            print(mrv)
-            dh = self.degree_heuristic(assignment, mrv)
+        # run mrv followed by dh
+        elif self.mrv and self.dh:
+            dh = self.degree_heuristic(assignment, self.minimum_remaining_values(assignment))
             return dh
 
         # regular unassigned variable selection
@@ -104,14 +94,62 @@ class ConstraintSatisfactionProblem:
 
     # maybe use LCV here
     def order_domain_values(self, variable, assignment):
-        domain = []
+        domainList = []
+        # print("current variable: "+self.csp.int_to_territory[variable])
+        if self.lcv:
+            domainList = self.least_constraining_value(variable, assignment)
+            
+        else:
+            for num in self.csp.int_to_domain:
+                domainList.append(num)
+
+        # print(domainList)
+        # print('-------------------------------------')
+
+        return domainList
+    
+    def least_constraining_value(self, variable, assignment):
+        domainList = []
+        lcv = {}
+
+        for domain in self.possibility_dict[variable]:
+            self.reduce_possibilities(variable, domain, assignment)
+
+            # neighbors post-reduction
+            neighbors = self.csp.adjacencyList[self.csp.int_to_territory[variable]]
+            sum = 0
+            for n in neighbors:
+                neighbor = self.csp.territory_to_int[n]
+
+                # when assigning variable to the current domain, we can get a sum of the possible values available for its neighbors
+                # print(self.possibility_dict[neighbor])
+                sum += len(self.possibility_dict[neighbor])
+            
+            lcv[domain] = sum
+            self.increase_possibilities(variable, domain, assignment)
+
+
+            # DEBUGGING INCREASE_POSS #######################
+            # print("increasing possibilities")
+            # for n in neighbors:
+            #     print("neighbor: "+str(n))
+            #     neighbor = self.csp.territory_to_int[n]
+            #     print(self.possibility_dict[neighbor])
+            #################################################
+                
+
+        # print(lcv)
+        # sort the dict by the values (sums) and then add the keys (domains) to the domain list
+        sortedLCV = dict(sorted(lcv.items(), key=lambda item: item[1]))
+        # print(sortedLCV)
         
-        for num in self.csp.int_to_domain:
-            domain.append(num)
+        for domain in sortedLCV.keys():
+            domainList.append(domain)
 
-        return domain
+        return domainList
 
-    def assignment_is_complete(self, assignment, csp):
+
+    def assignment_is_complete(self, assignment):
         for val in assignment:
             if val is None:
                 return False
@@ -124,11 +162,10 @@ class ConstraintSatisfactionProblem:
     
     def recursive_backtracking(self, assignment, csp):
         csp.visited += 1
-        if self.assignment_is_complete(assignment, csp):
+        if self.assignment_is_complete(assignment):
             return assignment
 
         variable = self.select_unassigned_variable(assignment)
-
         domains = self.order_domain_values(variable, assignment)
         for value in domains:
             # check if value works with variable in current assignment
@@ -148,13 +185,11 @@ class ConstraintSatisfactionProblem:
                 # assignment.pop()
                 assignment[variable] = None
                 
-
         # return failure
         return False
     
     # after making an assignment, remove the value from the posibilities of its neighbors
     # remove all but the chosen value for the variable in concern
-    
     def reduce_possibilities(self, variable, value, assignment):
         adjList = self.csp.adjacencyList
 
@@ -166,7 +201,7 @@ class ConstraintSatisfactionProblem:
             if assignment[neighbor] is None and value in self.possibility_dict[neighbor]:
                 self.possibility_dict[neighbor].remove(value)
         
-        # we would remove all other values from the possibility list
+        # we would remove all other values from the possibility list for the current variable
         # but mrv does not even consider the possibilities of variables that are already assigned
         # so no need to change the possibilities here, it would just add extra work having to add them back later in increase_possibilities
 
@@ -178,8 +213,8 @@ class ConstraintSatisfactionProblem:
         for n in neighbors:
             neighbor = self.csp.territory_to_int[n]
 
-            # go through all the neighbors of the variable and add this value to its possible values
-            if assignment[neighbor] is None and value in self.possibility_dict[neighbor]:
+            # go through all the unassigned neighbors of the variable and add this value to its possible values
+            if assignment[neighbor] is None:
                 self.possibility_dict[neighbor].append(value)
 
 # set of arcs, so you don't add the arc more than once
