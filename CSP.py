@@ -1,3 +1,4 @@
+import random
 class ConstraintSatisfactionProblem:
     def __init__(self, problem, MRV, DH, LCV):
         self.csp = problem
@@ -109,11 +110,10 @@ class ConstraintSatisfactionProblem:
         return domainList
     
     def least_constraining_value(self, variable, assignment):
-        domainList = []
         lcv = {}
-
+    
         for domain in self.possibility_dict[variable]:
-            self.reduce_possibilities(variable, domain, assignment)
+            changed = self.reduce_possibilities(variable, domain, assignment)
 
             # neighbors post-reduction
             neighbors = self.csp.adjacencyList[self.csp.int_to_territory[variable]]
@@ -122,31 +122,16 @@ class ConstraintSatisfactionProblem:
                 neighbor = self.csp.territory_to_int[n]
 
                 # when assigning variable to the current domain, we can get a sum of the possible values available for its neighbors
-                # print(self.possibility_dict[neighbor])
                 sum += len(self.possibility_dict[neighbor])
             
             lcv[domain] = sum
-            self.increase_possibilities(variable, domain, assignment)
-
-
-            # DEBUGGING INCREASE_POSS #######################
-            # print("increasing possibilities")
-            # for n in neighbors:
-            #     print("neighbor: "+str(n))
-            #     neighbor = self.csp.territory_to_int[n]
-            #     print(self.possibility_dict[neighbor])
-            #################################################
+            self.increase_possibilities(variable, domain, assignment, changed)
                 
 
         # print(lcv)
         # sort the dict by the values (sums) and then add the keys (domains) to the domain list
-        sortedLCV = dict(sorted(lcv.items(), key=lambda item: item[1]))
-        # print(sortedLCV)
-        
-        for domain in sortedLCV.keys():
-            domainList.append(domain)
-
-        return domainList
+        sortedLCV = sorted(lcv, key=lcv.get, reverse=True)
+        return sortedLCV
 
 
     def assignment_is_complete(self, assignment):
@@ -171,17 +156,16 @@ class ConstraintSatisfactionProblem:
             # check if value works with variable in current assignment
             if csp.is_consistent(variable, value, assignment):
                 # variable is index
-                # assignment.append(value)
                 assignment[variable] = value
                 # possibility dict used by heuristics
-                self.reduce_possibilities(variable, value, assignment)
+                changed = self.reduce_possibilities(variable, value, assignment)
 
                 result = self.recursive_backtracking(assignment, csp)
 
                 if result is not False:
                     return result
                 
-                self.increase_possibilities(variable, value, assignment)
+                self.increase_possibilities(variable, value, assignment, changed)
                 # assignment.pop()
                 assignment[variable] = None
                 
@@ -192,21 +176,25 @@ class ConstraintSatisfactionProblem:
     # remove all but the chosen value for the variable in concern
     def reduce_possibilities(self, variable, value, assignment):
         adjList = self.csp.adjacencyList
-
         neighbors = adjList[self.csp.int_to_territory[variable]]
+        changed = []
+
         for n in neighbors:
             neighbor = self.csp.territory_to_int[n]
 
             # go through all the neighbors of the variable and remove this value from its possible values
             if assignment[neighbor] is None and value in self.possibility_dict[neighbor]:
                 self.possibility_dict[neighbor].remove(value)
+                changed.append(neighbor)
+
+        return changed
         
         # we would remove all other values from the possibility list for the current variable
         # but mrv does not even consider the possibilities of variables that are already assigned
         # so no need to change the possibilities here, it would just add extra work having to add them back later in increase_possibilities
 
     # undo everything done above
-    def increase_possibilities(self, variable, value, assignment):
+    def increase_possibilities(self, variable, value, assignment, changed):
         adjList = self.csp.adjacencyList
 
         neighbors = adjList[self.csp.int_to_territory[variable]]
@@ -214,7 +202,7 @@ class ConstraintSatisfactionProblem:
             neighbor = self.csp.territory_to_int[n]
 
             # go through all the unassigned neighbors of the variable and add this value to its possible values
-            if assignment[neighbor] is None:
+            if assignment[neighbor] is None and neighbor in changed:
                 self.possibility_dict[neighbor].append(value)
 
 # set of arcs, so you don't add the arc more than once

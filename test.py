@@ -21,22 +21,22 @@ def get_params(file):
     return (adjacency_list, domain_list)
 
 # edit filename for input
-file = open('us_states.txt', 'r')
+file = open('aus_states.txt', 'r')
 (adjacency_list, domain_list) = get_params(file)
 
-compareHeuristics = True
+compareHeuristics = False
 
 if not compareHeuristics:
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     before = time()
     # parameters: MRV (true or false), DH (true or false), LCV (true or false)
-    solution = mapColoringProblem.solve_csp(MRV=True, LCV=True)
+    solution = mapColoringProblem.solve_csp(LCV=True)
     after = time()
 
     if solution:
         print(solution)
         print("It took "+str(after-before)+" seconds to solve.")
-        
+
 else:
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     # with only mrv heuristic
