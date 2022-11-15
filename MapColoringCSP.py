@@ -3,34 +3,40 @@ from CSP import ConstraintSatisfactionProblem
 
 class MapColoringCSP:
     def __init__(self, adjacencyList, domainList):
-        self.adjacencyList = adjacencyList
-
-        variables = []
-        for key in adjacencyList:
-            variables.append(key)
-
-        self.variables =  variables
+        self.ogAdjList = adjacencyList
         self.domain = domainList
 
-        territoryDict1 = {}
-        territoryDict2 = {}
-        index = 0
-        for variable in variables:
-            territoryDict1[index] = variable
-            territoryDict2[variable] = index
-            index += 1
-
-        self.int_to_territory = territoryDict1
-        self.territory_to_int = territoryDict2
-
+        variables = []              # variables in int form
+        int_to_territory = {}       # int to variables map 
+        territory_to_int = {}       # variables to int map
+        i = 0
+        for variable in adjacencyList:
+            variables.append(i)
+            int_to_territory[i] = variable
+            territory_to_int[variable] = i
+            i += 1
+        
+        # a dictionary from color int to the color domain
         colorDict = {}
-        index = 0
+        i = 0
         for color in domainList:
-            colorDict[index] = color
-            index += 1
+            colorDict[i] = color
+            i += 1
 
-        self.int_to_domain = colorDict
-        self.visited = 0
+        # creating an adjacency list with int counterparts instead of the original variables and domains
+        adjList = {}
+        for var in adjacencyList:
+            neighbors = adjacencyList[var]
+            adjList[territory_to_int[var]] = []
+
+            for neighbor in neighbors:
+                adjList[territory_to_int[var]].append(territory_to_int[neighbor])
+
+        self.adjacencyList = adjList                    # adj list with ints
+        self.variables =  variables                     # variables list in ints
+        self.int_to_territory = int_to_territory        # map from ints to original variables
+        self.int_to_domain = colorDict                  # map from ints to original color values
+        self.visited = 0                                # number of nodes visited
 
     def solve_csp(self, MRV=False, DH=False, LCV=False):
         csp = ConstraintSatisfactionProblem(self, MRV, DH, LCV)
@@ -54,12 +60,10 @@ class MapColoringCSP:
         return readable
 
     def is_consistent(self, variable, value, assignment):
-        neighbors = self.adjacencyList[self.int_to_territory[variable]]
+        neighbors = self.adjacencyList[variable]
         
         for neighbor in neighbors:
-            neighbor_int = self.territory_to_int[neighbor]
-
-            if value == assignment[neighbor_int]:
+            if value == assignment[neighbor]:
                 return False
 
         return True

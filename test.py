@@ -21,7 +21,7 @@ def get_params(file):
     return (adjacency_list, domain_list)
 
 # edit filename for input
-file = open('aus_states.txt', 'r')
+file = open('us_states.txt', 'r')
 (adjacency_list, domain_list) = get_params(file)
 
 compareHeuristics = False
@@ -30,7 +30,7 @@ if not compareHeuristics:
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     before = time()
     # parameters: MRV (true or false), DH (true or false), LCV (true or false)
-    solution = mapColoringProblem.solve_csp(LCV=True)
+    solution = mapColoringProblem.solve_csp()
     after = time()
 
     if solution:
@@ -38,6 +38,7 @@ if not compareHeuristics:
         print("It took "+str(after-before)+" seconds to solve.")
 
 else:
+    before = time()
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     # with only mrv heuristic
     print("Running with only MRV")
@@ -49,20 +50,24 @@ else:
     # with both mrv and dh
     mrv_dh = mapColoringProblem.solve_csp(MRV=True, DH=True)
 
+    print()
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     print("Running with only DH")
     # only turning on dh will automatically turn on the switch for mrv
     only_dh = mapColoringProblem.solve_csp(DH=True)
 
+    print()
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     print("Running with MRV and LCV")
     # only turning on dh will automatically turn on the switch for mrv
     mrv_lcv = mapColoringProblem.solve_csp(MRV=True, LCV=True)
 
+    after = time()
+
     # comparing results from turning on both MRV and DH and from turning on just DH 
     # should give same result for reason in comment in Line 47
     print()
-    print("Comparing results")
+    print("Comparing results...")
     if mrv_dh != only_dh:
         print("Error: these should return the same results.")
     else:
@@ -79,6 +84,9 @@ else:
         print("Result with only MRV differs from result with both MRV and LCV.")
     else:
         print("Result with only MRV same as result with both MRV and LCV.")
+
+    print()
+    print("The above tests took "+ str(after-before) + " seconds.")
 
 
     
