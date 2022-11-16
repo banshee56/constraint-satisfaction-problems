@@ -24,9 +24,11 @@ def get_params(file):
 file = open('us_states.txt', 'r')
 (adjacency_list, domain_list) = get_params(file)
 
-compareHeuristics = False
+compareHeuristics = True
 
+# if not comparing performance with heuristics
 if not compareHeuristics:
+    # solve the problem normally
     mapColoringProblem = MapColoringCSP(adjacency_list, domain_list)
     before = time()
     # parameters: MRV (true or false), DH (true or false), LCV (true or false)

@@ -49,7 +49,6 @@ class MapColoringCSP:
             return False
 
         # map from int back to variables
-        # TO DO
         readable = {}
         for variable in range(len(solution)):
             value = solution[variable]
@@ -67,3 +66,14 @@ class MapColoringCSP:
                 return False
 
         return True
+
+    def pair_consistent(self, var1, var2, val1, val2):
+        # if variables are not neighbors
+        if var1 not in self.adjacencyList[var2]:
+            # then they don't constrain each other
+            return True
+
+        # if they are neighbors and their domain values are the same
+        if val1 == val2:
+            # then they are inconsistent
+            return False
