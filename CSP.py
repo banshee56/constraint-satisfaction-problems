@@ -1,7 +1,7 @@
 from collections import deque
 
 class ConstraintSatisfactionProblem:
-    def __init__(self, problem, MRV, DH, LCV):
+    def __init__(self, problem, MRV, DH, LCV, infer):
         self.csp = problem
         self.possibility_dict = {}
 
@@ -9,6 +9,7 @@ class ConstraintSatisfactionProblem:
         self.mrv = MRV
         self.dh = DH
         self.lcv = LCV
+        self.infer = infer
 
         # if dh turned on, but mrv is not
         if self.dh and not self.mrv:
@@ -109,26 +110,26 @@ class ConstraintSatisfactionProblem:
         # if dh turned off but mrv turned on then just return the first (tied) mrv
         return mrv[0]
 
-    
 
-    def least_constraining_value(self, variable, assignment):
+
+    def least_constraining_value(self, variable):
         lcv = {}
     
         for domain in self.possibility_dict[variable]:
-            (changed, prev_possibilities)  = self.reduce_possibilities(variable, domain, assignment)
-
             # neighbors post-reduction
             neighbors = self.csp.adjacencyList[variable]
-            sum = 0
+
+            constraints = 0
             for neighbor in neighbors:
-                # when assigning variable to the current domain, we can get a sum of the possible values available for its neighbors
-                sum += len(self.possibility_dict[neighbor])
+                # if neighbor could have been assigned the domain value, then it gets constrained by the assignment
+                if domain in self.possibility_dict[neighbor]:
+                    # 1 more neighbor constrained by this domain choice for the variable
+                    constraints += 1
             
-            lcv[domain] = sum
-            self.increase_possibilities(variable, domain, assignment, changed, prev_possibilities)
+            lcv[domain] = constraints
                 
-        # sort the dict by the values (sums) and then add the keys (domains) to the domain list
-        sortedLCV = sorted(lcv, key=lcv.get, reverse=True)
+        # sort the dict by the values (number of neighbors constrained)
+        sortedLCV = sorted(lcv, key=lcv.get)
         return sortedLCV
 
 
@@ -169,12 +170,12 @@ class ConstraintSatisfactionProblem:
 
 
     # order the domain values given to the backtracking algorithm
-    def order_domain_values(self, variable, assignment):
+    def order_domain_values(self, variable):
         domainList = []
 
         # order by least constraining values first
         if self.lcv:
-            domainList = self.least_constraining_value(variable, assignment)      
+            domainList = self.least_constraining_value(variable)      
 
         # regular order 
         else:
@@ -194,40 +195,98 @@ class ConstraintSatisfactionProblem:
 
 
     def backtracking_search(self):
-        init_assingment = [None for i in range(len(self.csp.int_to_territory))]
+        init_assingment = [None for i in range(len(self.csp.int_to_variable))]
         return self.backtrack(init_assingment, self.csp)
 
     
 
     def backtrack(self, assignment, csp):
         csp.visited += 1
+        
         if self.assignment_is_complete(assignment):
             return assignment
 
         variable = self.select_unassigned_variable(assignment)
-        domains = self.order_domain_values(variable, assignment)
+        domains = self.order_domain_values(variable)
 
         for value in domains:
             if csp.is_consistent(variable, value, assignment):                                            # check if value works with variable in current assignment
                 assignment[variable] = value
                 (changed, prev_possibilities) = self.reduce_possibilities(variable, value, assignment)    # update possibility dict used by heuristics
 
-                result = self.backtrack(assignment, csp)
-                if result is not False:
-                    return result
-                
+                # if inference turned on
+                if self.infer:
+                    # make an inference
+                    removedDict = self.arc_consistency_3()
+                    # check if inference is valid
+                    valid = self.check_inference()
+
+                    # if inference is successful
+                    if valid:
+                        # add valid inferences to assignment
+                        prev_possibilities = self.add_inference_to_assignment(assignment)
+
+                        # check if we get result from inference
+                        result = self.backtrack(assignment, csp)
+                        if result is not False:
+                            return result
+
+                        # if results in failure, remove inferences from assignment
+                        for var in prev_possibilities:
+                            assignment[var] = prev_possibilities[var]
+                    
+                    # add values back to domain
+                    for var in removedDict:
+                        for val in removedDict[var]:
+                            self.possibility_dict[var].append(val)
+                            
+                # if inference is not turned on
+                else:
+                    result = self.backtrack(assignment, csp)
+                    if result is not False:
+                        return result                
+
                 self.increase_possibilities(variable, value, assignment, changed, prev_possibilities)     # undo the changes made to the possibility dict by the failed assignment
                 assignment[variable] = None                                                               # undo the failed assignment
                 
         # return failure
         return False
 
+    def add_inference_to_assignment(self, assignment):
+        prev_poss = {}
+
+        for variable in self.possibility_dict:
+            domains = self.possibility_dict[variable]
+            
+            # if we narrowed it down to only one possible value for a variable
+            # add inference to assignment
+            if len(domains) == 1 and assignment[variable] is None:
+                prev_poss[variable] = assignment[variable]
+                assignment[variable] = domains[0]
+
+        return prev_poss
+
+                
+
+    def check_inference(self):
+        for variable in self.possibility_dict:
+            # the possible domains of each variable
+            domains = self.possibility_dict[variable]
+
+            # if there are no possible domain values for a variable
+            # inference has failed
+            if len(domains) < 1:
+                return False
+        
+        return True
 
 
     # set of arcs, so you don't add the arc more than once
     def arc_consistency_3(self):
         # initialized to all arcs
         queue = deque()
+        removedDict = {}
+
         for pair in self.arc_set:
             queue.append(pair)
 
@@ -237,28 +296,34 @@ class ConstraintSatisfactionProblem:
             x_j = pair[1] 
 
             # if pair is inconsistent and inconsistent domain values were removed
-            if self.remove_inconsistent_variables(x_i, x_j):
+            removed = self.remove_inconsistent_variables(x_i, x_j, removedDict)
+
+            # if some domain was removed from x_i
+            if removed:
                 # add the neighbors of x_i to the queue again
                 for x_k in self.csp.adjacencyList[x_i]:
                     pair = (x_k, x_i)
                     queue.append(pair)
+        
+        return removedDict
 
 
-
-    def remove_inconsistent_variables(self, x_i, x_j):
-        removed =  False
-
+    def remove_inconsistent_variables(self, x_i, x_j, removedDict):
+        removed = False
         for x in self.possibility_dict[x_i]:
-            consistent = False
-            for y in self.possibility_dict[x_j]:
-                # if even one x, y pair is consistent
-                if self.csp.pair_consistent(x_i, x_j, x, y):
-                    consistent = True
+
+            # if x_j is a neighbor of x_i and the current domain value of x is the only possible domain of x_j
+            if x_j in self.csp.adjacencyList[x_i] and self.possibility_dict[x_j] == [x]:
             
-            # if no y in domain x_j allows (x, y) to satisfy the constraint
-            if not consistent:
-                # remove x from domain x_i
+                # remove x from domain of x_i
                 self.possibility_dict[x_i].remove(x)
                 removed = True
-        
-        return removed
+
+                if x_i not in removedDict:
+                    removedDict[x_i] = []
+                if x_i in removedDict:
+                    removedDict[x_i].append(x)        
+
+        return removed    
+
+    

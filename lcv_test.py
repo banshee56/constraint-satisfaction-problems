@@ -1,4 +1,4 @@
-import copy
+# file to test lcv heuristic
 
 possDict = {}
 possDict[0] = [1, 2, 9, 6]

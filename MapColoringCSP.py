@@ -2,17 +2,18 @@ from CSP import ConstraintSatisfactionProblem
 
 
 class MapColoringCSP:
-    def __init__(self, adjacencyList, domainList):
-        self.ogAdjList = adjacencyList
+    def __init__(self, filename):
+        (adjacencyList, domainList) = self.get_params(filename)
+
         self.domain = domainList
 
         variables = []              # variables in int form
-        int_to_territory = {}       # int to variables map 
+        int_to_variable = {}       # int to variables map 
         territory_to_int = {}       # variables to int map
         i = 0
         for variable in adjacencyList:
             variables.append(i)
-            int_to_territory[i] = variable
+            int_to_variable[i] = variable
             territory_to_int[variable] = i
             i += 1
         
@@ -34,12 +35,35 @@ class MapColoringCSP:
 
         self.adjacencyList = adjList                    # adj list with ints
         self.variables =  variables                     # variables list in ints
-        self.int_to_territory = int_to_territory        # map from ints to original variables
+        self.int_to_variable = int_to_variable        # map from ints to original variables
         self.int_to_domain = colorDict                  # map from ints to original color values
         self.visited = 0                                # number of nodes visited
 
-    def solve_csp(self, MRV=False, DH=False, LCV=False):
-        csp = ConstraintSatisfactionProblem(self, MRV, DH, LCV)
+    
+    # reads from a file containing the information
+    def get_params(self, filename):
+        file = open(filename, 'r')
+        domain_list = file.readline().strip().split(',')
+
+        adjacency_list = {} # dictionary
+        for line in file:
+            states = line.strip().split(',')
+            curr = states[0]
+            neighbors = set()
+            for neighbor in states[1:]:
+                neighbors.add(neighbor)
+
+            if len(neighbors) > 0:
+                adjacency_list[curr] = neighbors
+            else:
+                adjacency_list[curr] = []
+
+        file.close()
+
+        return (adjacency_list, domain_list)
+
+    def solve_csp(self, MRV=False, DH=False, LCV=False, infer=False):
+        csp = ConstraintSatisfactionProblem(self, MRV, DH, LCV, infer)
 
         # int csp solution
         solution = csp.backtracking_search()
@@ -52,7 +76,7 @@ class MapColoringCSP:
         readable = {}
         for variable in range(len(solution)):
             value = solution[variable]
-            readable[self.int_to_territory[variable]] = self.int_to_domain[value]
+            readable[self.int_to_variable[variable]] = self.int_to_domain[value]
 
         # return solution
         print('Found solutions after visiting '+str(self.visited)+' nodes.')
@@ -77,3 +101,5 @@ class MapColoringCSP:
         if val1 == val2:
             # then they are inconsistent
             return False
+        
+        return True
