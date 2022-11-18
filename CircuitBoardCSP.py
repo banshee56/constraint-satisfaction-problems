@@ -179,6 +179,3 @@ class CircuitBoardCSP:
             return False
         
         return True
-
-
-csp = CircuitBoardCSP('circuit.txt')
