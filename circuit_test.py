@@ -8,7 +8,7 @@ filename = 'circuit.txt'
 circuitProblem = CircuitBoardCSP(filename)
 before = time()
 # optional parameters: MRV (true or false), DH (true or false), LCV (true or false), infer (true or false)
-circuitProblem.solve_csp()
+circuitProblem.solve_csp(infer=True)
 after = time()
 
 print("It took "+str(after-before)+" seconds to solve circuit in "+filename)

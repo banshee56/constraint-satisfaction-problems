@@ -4,11 +4,8 @@ from CSP import ConstraintSatisfactionProblem
 class MapColoringCSP:
     def __init__(self, filename):
         (adjacencyList, domainList) = self.get_params(filename)
-
-        self.domain = domainList
-
         variables = []              # variables in int form
-        int_to_variable = {}       # int to variables map 
+        int_to_variable = {}        # int to variables map 
         territory_to_int = {}       # variables to int map
         i = 0
         for variable in adjacencyList:
@@ -35,12 +32,13 @@ class MapColoringCSP:
 
         self.adjacencyList = adjList                    # adj list with ints
         self.variables =  variables                     # variables list in ints
-        self.int_to_variable = int_to_variable        # map from ints to original variables
+        self.int_to_variable = int_to_variable          # map from ints to original variables
         self.int_to_domain = colorDict                  # map from ints to original color values
         self.visited = 0                                # number of nodes visited
 
     
-    # reads from a file containing the information
+
+    # reads from an input file containing the problem information
     def get_params(self, filename):
         file = open(filename, 'r')
         domain_list = file.readline().strip().split(',')
@@ -50,9 +48,12 @@ class MapColoringCSP:
             states = line.strip().split(',')
             curr = states[0]
             neighbors = set()
+
+            # grabbing the neighbors from the line
             for neighbor in states[1:]:
                 neighbors.add(neighbor)
 
+            # adding neighbors to adjacency list of curr
             if len(neighbors) > 0:
                 adjacency_list[curr] = neighbors
             else:
@@ -62,6 +63,8 @@ class MapColoringCSP:
 
         return (adjacency_list, domain_list)
 
+
+    # the function to call to solve the problem
     def solve_csp(self, MRV=False, DH=False, LCV=False, infer=False):
         csp = ConstraintSatisfactionProblem(self, MRV, DH, LCV, infer)
 
@@ -82,6 +85,8 @@ class MapColoringCSP:
         print('Found solutions after visiting '+str(self.visited)+' nodes.')
         return readable
 
+    
+    # checks if potential assignment is consistent
     def is_consistent(self, variable, value, assignment):
         neighbors = self.adjacencyList[variable]
         
@@ -91,6 +96,8 @@ class MapColoringCSP:
 
         return True
 
+
+    # checks if pair in arc consistency method is consistent
     def pair_consistent(self, var1, var2, val1, val2):
         # if variables are not neighbors
         if var1 not in self.adjacencyList[var2]:

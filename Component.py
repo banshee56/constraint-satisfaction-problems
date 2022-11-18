@@ -1,5 +1,5 @@
 class Component:
-    def __init__(self, char, length, width):
+    def __init__(self, char, length, height):
         self.char = char
         self.length = length
-        self.width = width
+        self.height = height

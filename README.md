@@ -59,6 +59,7 @@ cc
 eeeeeee
 ```
 
+Please do not use the same character for different components. Additionally, do not use '.' as a character for a component as '.' represents an empty cell on the board.
 
 ## Further Examples
 
